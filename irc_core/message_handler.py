@@ -1,4 +1,4 @@
-class CommandHandler:
+class MessageHandler:
     def __init__(self):
         self.cmds = {}
         self.validators = {}

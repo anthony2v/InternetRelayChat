@@ -1,8 +1,8 @@
 from unittest import mock
-from irc_core.command_handler import CommandHandler
+from irc_core.message_handler import MessageHandler
 
-def test_command_handlers_can_be_bound():
-    ch = CommandHandler()
+def test_message_handlers_can_be_bound():
+    ch = MessageHandler()
     
     mock_fn = mock.MagicMock()
 
@@ -14,7 +14,7 @@ def test_command_handlers_can_be_bound():
     mock_fn.assert_called()
 
 def test_validators_can_be_bound():
-    ch = CommandHandler()
+    ch = MessageHandler()
     
     mock_fn = mock.MagicMock()
 
