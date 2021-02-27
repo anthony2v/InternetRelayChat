@@ -1,14 +1,21 @@
-from irc_core import MessageHandler, Connection
+from irc_core import MessageListener, Connection
+from irc_core.parser import serialize_message
 
 
-class Server(MessageHandler):
+class Server(MessageListener):
 
     def __init__(self):
-        self.connections = {}
+        self.connections = []
+        self.host = None
 
     def send(self, msg: bytes, *params: bytes, prefix = None, exclude = None):
-        for connection in self.connections.values():
+        if prefix is None:
+            prefix = self.host
+
+        message = serialize_message(msg, *params, prefix = prefix)
+
+        for connection in self.connections:
             if connection == exclude:
                 continue
 
-            connection
+            connection.send_message(message)
