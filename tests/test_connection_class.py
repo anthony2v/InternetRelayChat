@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 
-@mock.patch('irc_core.connections._socket.gethostbyaddr', return_value=('laptop1',))
+@mock.patch('irc_core.connections.socket.gethostbyaddr', return_value=('laptop1',))
 def test_connection_gets_host_name(mock_gethostbyaddr):
     conn = Connection(mock.MagicMock(), ('127.0.0.1', 50000))
     

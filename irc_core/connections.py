@@ -1,5 +1,4 @@
-import _socket
-import select
+import socket, select
 
 from .logger import logger
 
@@ -10,14 +9,14 @@ class Connection:
         self._socket = socket_conn
         self.addr = addr
         self.nickname = None
-        self.host = _socket.gethostbyaddr(addr[0])[0]
+        self.host = socket.gethostbyaddr(addr[0])[0]
         self._incoming_buffer = b''
         self._incoming_messages = []
         self._outgoing_messages = []
 
     def shutdown(self):
         try:
-            self._socket.shutdown(_socket.SHUT_RDWR)
+            self._socket.shutdown(socket.SHUT_RDWR)
             self._socket.close()
         except:
             pass
@@ -39,13 +38,11 @@ class Connection:
 
     def next_message(self):
         return self._incoming_messages.pop(0)
-        self._outgoing_messages = []
 
     def has_messages(self):
         self._get_messages()
 
         return len(self._incoming_messages) > 0
-        self._outgoing_messages = []
 
     def send_message(self, msg):
         self._outgoing_messages.append(msg)
