@@ -155,3 +155,44 @@ def test_get_messages_bytes_already_in__incoming_buffer_are_prefixed_to_first_me
     conn._get_messages()
     assert conn._incoming_messages == [b'abcdefgh']
     assert conn._incoming_buffer == b''
+
+
+def test_send_message_adds_message_to_list_of_outgoing_messages():
+    conn = Connection(mock.MagicMock(), ('127.0.0.1', 50000))
+    
+    conn.send_message(b'test')
+
+    assert b'test\r\n' in conn._outgoing_messages
+
+
+def test_send_message_raises_value_error_when_len_msg_gt_512():
+    conn = Connection(mock.MagicMock(), ('127.0.0.1', 50000))
+
+    with pytest.raises(ValueError):
+        conn.send_message(b't' * 513)
+
+
+def test_flush_messages_sends_all_buffered_messages():
+    conn = Connection(mock.MagicMock(), ('127.0.0.1', 50000))
+
+    conn.send_message(b'abcd')
+    conn.send_message(b'efgh')
+
+    conn.flush_messages()
+
+    conn._socket.sendall.assert_called_with(b'abcd\r\nefgh\r\n')
+
+def test_flush_messages_with_socket_pair():
+    s1, s2 = socket.socketpair()
+    s1.setblocking(False)
+    s2.setblocking(False)
+
+    conn = Connection(s2, ('127.0.0.1', 50000))
+
+    conn.send_message(b'abcd')
+    conn.send_message(b'efgh')
+
+    conn.flush_messages()
+
+    data = s1.recv(512)
+    assert data == b'abcd\r\nefgh\r\n'

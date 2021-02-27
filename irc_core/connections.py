@@ -45,4 +45,14 @@ class Connection:
         return len(self._incoming_messages) > 0
 
     def send_message(self, msg):
+        msg = msg + b'\r\n'
+        if len(msg) > 512:
+            raise ValueError(f'msg too long ({len(msg)})')
+
         self._outgoing_messages.append(msg)
+    
+    def flush_messages(self):
+        msg = b''.join(self._outgoing_messages)
+        self._outgoing_messages = []
+        
+        self._socket.sendall(msg)

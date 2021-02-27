@@ -198,15 +198,15 @@ class MessageListener:
         """Used to parse a received message and pass it to any bound callbacks."""
         pass
 
-    def on(self, msg) -> Callable[[Connection, List[bytes], Optional[bytes]], None]: # replaces `command`
+    def on(self, msg, from_=None: Connection) -> Callable[[Connection, List[bytes], Optional[bytes]], None]: # replaces `command`
         """Bind a callback to a specific message type."""
         pass
 
-    def off(self, msg, func) -> None:
+    def off(self, msg, func, from_=None: Connection) -> None:
         """Unbind a callback for a specific message type."""
         pass
 
-    def once(self, msg) -> Callable[[Connection, List[bytes], Optional[bytes]], None]:
+    def once(self, msg, from_=None: Connection) -> Callable[[Connection, List[bytes], Optional[bytes]], None]:
         """Bind a callback for a specific message type, and then unbind after one message has been processed."""
         pass
 
@@ -239,5 +239,15 @@ def on_private_message(connection, *params, prefix=None):
     if prefix is None:
         prefix = connection.nickname
     server.send('PRIVMSG', *params, prefix=prefix, exclude=connection)
+
+
+self.general_msg_handlers = {
+    'PRIVMSG': func
+}
+
+self.specific_msg_handlers = {
+    ('PRIVMSG', Connection): func
+}
+
 
 ```
