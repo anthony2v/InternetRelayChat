@@ -7,7 +7,6 @@ from typing import Callable, List, Optional
 class MessageListener:
     def __init__(self):
         self.cmds = {}
-        self.validators = {}
         self.general_message_handlers = {}
         self.specific_message_handlers = {}
     
@@ -32,14 +31,6 @@ class MessageListener:
             cmd = cmd.encode()
         def _decorator(func):
             self.cmds[cmd] = func
-            return func
-        return _decorator
-    
-    def validator(self, cmd):
-        if type(cmd) == str:
-            cmd = cmd.encode()
-        def _decorator(func):
-            self.validators[cmd] = func
             return func
         return _decorator
     
