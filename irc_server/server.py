@@ -5,7 +5,7 @@ from irc_core.parser import serialize_message
 class Server(MessageListener):
 
     def __init__(self):
-        self.connections = []
+        self._connections = []
         self.host = None
 
     def send(self, msg: bytes, *params: bytes, prefix = None, exclude = None):
@@ -14,7 +14,7 @@ class Server(MessageListener):
 
         message = serialize_message(msg, *params, prefix = prefix)
 
-        for connection in self.connections:
+        for connection in self._connections:
             if connection == exclude:
                 continue
 
