@@ -52,7 +52,8 @@ class Connection:
         self._outgoing_messages.append(msg)
     
     def flush_messages(self):
-        msg = b''.join(self._outgoing_messages)
-        self._outgoing_messages = []
-        
-        self._socket.sendall(msg)
+        if self._outgoing_messages:
+            msg = b''.join(self._outgoing_messages)
+            self._outgoing_messages = []
+            
+            self._socket.sendall(msg)
