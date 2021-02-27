@@ -229,44 +229,15 @@ class Server(MessageListener):
 def on_ping(connection, *params, prefix=None):
     server.send('PONG')
 
-@client.on('PING')
-def on_ping(*params, prefix=None):
-    return
-
-@client.on('PING')
-def on_ping(*params, prefix=None):
-    return 'PONG'
-
-@client.on('PRIVMSG')
-def on_private_mesage(*params, prefix=None):
-    print(prefix, params)
-    view.put_message()
-
-
 # Server-side
 @server.on('PING')
 def on_ping(connection, *params, prefix=None):
     connection.send('PING')
-
-@server.on('PING')
-def on_ping(*params, prefix=None):
-    return 'PONG'
 
 @server.on('PRIVMSG')
 def on_private_message(connection, *params, prefix=None):
     if prefix is None:
         prefix = connection.nickname
     server.send('PRIVMSG', *params, prefix=prefix, exclude=connection)
-    
-@server.on('PRIVMSG')
-def on_private_message(send, *params, prefix=None):
-    send('PRIVMSG', *params, prefix=prefix, echo=False)
-
-
-@server.on('PRIVMSG')
-def on_private_message(send, *params, prefix=None):
-    send('PRIVMSG', *params, prefix=prefix, echo=False)
-
-    return RPL_MSGSENT
 
 ```

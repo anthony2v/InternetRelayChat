@@ -1,4 +1,4 @@
-import socket
+import _socket
 import select
 
 from .logger import logger
@@ -7,37 +7,45 @@ from .logger import logger
 class Connection:
 
     def __init__(self, socket_conn, addr):
-        self.socket = socket_conn
+        self._socket = socket_conn
         self.addr = addr
-        self.host, *_ = socket.gethostbyaddr(addr[0])
-        self.buffer = b''
-        self.messages = []
+        self.nickname = None
+        self.host = _socket.gethostbyaddr(addr[0])[0]
+        self._incoming_buffer = b''
+        self._incoming_messages = []
+        self._outgoing_messages = []
 
     def shutdown(self):
         try:
-            self.socket.shutdown(socket.SHUT_RDWR)
-            self.socket.close()
+            self._socket.shutdown(_socket.SHUT_RDWR)
+            self._socket.close()
         except:
             pass
 
     def _read_bytes(self):
-        new_bytes = self.socket.recv(512)
+        new_bytes = self._socket.recv(512)
         if not new_bytes:
-            raise EOFError() # TODO Should this be thrown once the buffer is empty?
+            raise EOFError() # TODO Should this be thrown once the _incoming_buffer is empty?
 
-        self.buffer += new_bytes
+        self._incoming_buffer += new_bytes
 
     def _get_messages(self):
-        read_available, *_ = select.select({self.socket}, {}, {}, 0)
+        read_available, *_ = select.select({self._socket}, {}, {}, 0)
         if read_available:
             self._read_bytes()
-            *msgs, self.buffer = self.buffer.split(b'\r\n')
-            self.messages += msgs
+            *msgs, self._incoming_buffer = self._incoming_buffer.split(b'\r\n')
+            self._incoming_messages += msgs
+            self._outgoing_messages = []
 
     def next_message(self):
-        return self.messages.pop(0)
+        return self._incoming_messages.pop(0)
+        self._outgoing_messages = []
 
     def has_messages(self):
         self._get_messages()
 
-        return len(self.messages) > 0
+        return len(self._incoming_messages) > 0
+        self._outgoing_messages = []
+
+    def send_message(self, msg):
+        self._outgoing_messages.append(msg)
