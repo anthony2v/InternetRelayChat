@@ -1,4 +1,4 @@
-from server.server import Connection
+from irc_core.connections import Connection
 from unittest import mock
 from irc_core.message_handler import MessageHandler
 import pytest
