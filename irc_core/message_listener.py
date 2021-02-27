@@ -16,22 +16,36 @@ class MessageListener:
 
     def on(self, msg, from_ = None) -> Callable[[Connection, List[bytes], Optional[bytes]], None]: # replaces `command`
         """Bind a callback to a specific message type."""
-        pass
-
-    def off(self, msg, func) -> None:
-        """Unbind a callback for a specific message type."""
-        pass
-
-    def once(self, msg) -> Callable[[Connection, List[bytes], Optional[bytes]], None]:
-        """Bind a callback for a specific message type, and then unbind after one message has been processed."""
-        pass
-
-    def command(self, cmd):
-        if type(cmd) == str:
-            cmd = cmd.encode()
+        if type(msg) == str:
+            msg = msg.encode()
         def _decorator(func):
-            self.cmds[cmd] = func
+            if from_ is None:
+                self.general_message_handlers[msg] = func
+            else:
+                self.specific_message_handlers[(msg, from_)] = func
             return func
+        return _decorator
+
+    def off(self, msg, func, from_ = None) -> None:
+        """Unbind a callback for a specific message type."""
+        if from_ is None:
+            self.general_message_handlers.pop(msg, None)
+        else:
+            self.specific_message_handlers.pop((msg, from_), None)
+
+    def once(self, msg, from_ = None) -> Callable[[Connection, List[bytes], Optional[bytes]], None]:
+        """Bind a callback for a specific message type, and then unbind after one message has been processed."""
+        if type(msg) == str:
+            msg = msg.encode()
+        def _decorator(func):
+            def wrapper(*args, **kwargs):
+                self.off(msg, wrapper, from_)
+                return func(*args, **kwargs)
+            if from_ is None:
+                self.general_message_handlers[msg] = wrapper
+            else:
+                self.specific_message_handlers[(msg, from_)] = wrapper
+            return wrapper
         return _decorator
     
     async def handle_message(self, connection, message):
