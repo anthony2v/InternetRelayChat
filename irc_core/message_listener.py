@@ -33,9 +33,20 @@ class MessageListener:
         else:
             self.specific_message_handlers.pop((msg, from_), None)
 
-    def once(self, msg) -> Callable[[Connection, List[bytes], Optional[bytes]], None]:
+    def once(self, msg, from_ = None) -> Callable[[Connection, List[bytes], Optional[bytes]], None]:
         """Bind a callback for a specific message type, and then unbind after one message has been processed."""
-        pass
+        if type(msg) == str:
+            msg = msg.encode()
+        def _decorator(func):
+            def wrapper(*args, **kwargs):
+                self.off(msg, wrapper, from_)
+                return func(*args, **kwargs)
+            if from_ is None:
+                self.general_message_handlers[msg] = wrapper
+            else:
+                self.specific_message_handlers[(msg, from_)] = wrapper
+            return wrapper
+        return _decorator
     
     async def handle_message(self, connection, message):
         logger.info("MessageHandler: received message %s", message)
