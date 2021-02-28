@@ -15,7 +15,7 @@ def test_server_send_sends_message_to_all_connections_when_no_exclude():
     server.send(b'PING')
 
     for conn in server._connections:
-        conn.send_message.asset_called_with(b'::3000 PING')
+        conn.send_message.asset_called_with(b'::6667 PING')
 
 def test_server_send_sends_message_to_all_connections_except_the_one_specified_by_exclude():
     server = Server()
@@ -29,7 +29,7 @@ def test_server_send_sends_message_to_all_connections_except_the_one_specified_b
 
     for conn in server._connections:
         if conn != exclude:
-            conn.send_message.assert_called_with(b'::3000 PING')
+            conn.send_message.assert_called_with(b'::6667 PING')
         else:
             conn.send_message.assert_not_called()
 
@@ -48,10 +48,10 @@ def test_remove_connection():
 
 @pytest.mark.asyncio
 async def test_server_accepts_connections():
-    with Server('0.0.0.0', port=3000) as server:
+    with Server('0.0.0.0', port=6667) as server:
         server_task = asyncio.create_task(server.start())
 
-        s = socket.create_connection(('0.0.0.0', 3000))
+        s = socket.create_connection(('0.0.0.0', 6667))
 
         # Sleep to allow time for connection to be accepted
         await asyncio.sleep(0.1)
@@ -72,12 +72,12 @@ async def test_server_accepts_connections():
 
 @pytest.mark.asyncio
 async def test_server_processes_messages():
-    with Server('0.0.0.0', port=3000) as server:
+    with Server('0.0.0.0', port=6667) as server:
         server.handle_message = mock.AsyncMock()
 
         server_task = asyncio.create_task(server.start())
 
-        s = socket.create_connection(('0.0.0.0', 3000))
+        s = socket.create_connection(('0.0.0.0', 6667))
         s.sendall(b'NICK\r\n')
 
         # Sleep to allow time for connection to be accepted
@@ -99,12 +99,12 @@ async def test_server_processes_messages():
 
 @pytest.mark.asyncio
 async def test_server_writes_back_messages():
-    with Server('0.0.0.0', port=3000) as server:
+    with Server('0.0.0.0', port=6667) as server:
         server.handle_message = mock.AsyncMock()
 
         server_task = asyncio.create_task(server.start())
 
-        s = socket.create_connection(('0.0.0.0', 3000))
+        s = socket.create_connection(('0.0.0.0', 6667))
         s.settimeout(1.0)
         s.sendall(b'PING\r\n')
         

@@ -1,3 +1,4 @@
+import asyncio
 from .connections import Connection
 from .logger import logger
 from functools import partial
@@ -6,7 +7,6 @@ from typing import Callable, List, Optional
 
 class MessageListener:
     def __init__(self):
-        self.cmds = {}
         self.general_message_handlers = {}
         self.specific_message_handlers = {}
     
@@ -51,21 +51,25 @@ class MessageListener:
     async def handle_message(self, connection, message):
         logger.info("MessageHandler: received message %s", message)
         cmd, prefix, params = self._parse_message(message)
-        if cmd not in self.cmds:
-            logger.info("MessageHandler: received unknown message type %s", cmd)
+
+        general_func = self.general_message_handlers.get(cmd)
+        specific_func = self.specific_message_handlers.get((cmd, connection))
+        
+        bound_funcs = []
+        if general_func:
+            bound_funcs.append(general_func)
+        if specific_func:
+            bound_funcs.append(specific_func)
+
+        if not bound_funcs:
+            logger.warning("MessageHandler: received unknown message type %s", cmd)
             return
-
-        valid = True
-        if cmd in self.validators:
-            valid = await self.validators[cmd](params, prefix = prefix)
-
-        if not valid:
-            # TODO return reply to client
-            raise ValueError()
-
-        send = partial(self.send, connection)
-        await self.cmds[cmd](send, *params, prefix = prefix)
-        pass
+        
+        futures = [
+            f(connection, *params, prefix = prefix)
+            for f in bound_funcs
+        ]
+        await asyncio.gather(*futures)
 
     def _parse_message(self, message):
         message = message.replace(b"\r\n", b"")

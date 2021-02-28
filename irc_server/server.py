@@ -6,7 +6,7 @@ from irc_core.parser import serialize_message
 
 class Server(MessageListener):
 
-    def __init__(self, host='', port=3000):
+    def __init__(self, host='', port=6667):
         self.host = host
         self.port = port
         self._socket = None
@@ -16,12 +16,15 @@ class Server(MessageListener):
         while True:
             try:
                 conn, addr = self._socket.accept()
-                self._connections.append(
-                    Connection(conn, addr))
+                self._accept_connection(conn, addr)
                 logger.info(f'accepted connection from {addr}')
             except BlockingIOError:
                 # Wait 10 miliseconds before checking for connections
                 await asyncio.sleep(0.01)
+
+    def _accept_connection(self, conn, addr):
+        connection = Connection(conn, addr)
+        self._connections.append(connection)
 
     async def _process_messages(self):
         while True:
@@ -57,8 +60,8 @@ class Server(MessageListener):
     def __exit__(self, exc_type, exc_value, traceback):
         logger.info('shutting down server')
 
-        self.accept_connection_task.cancel()
-        self.process_messages_task.cancel()
+        self._accept_connections_task.cancel()
+        self._process_message_task.cancel()
 
         self._socket.shutdown(socket.SHUT_RD)
 
@@ -75,10 +78,10 @@ class Server(MessageListener):
 
         logger.info('starting server')
 
-        self.accept_connection_task = asyncio.create_task(self._accept_connections())
-        self.process_messages_task = asyncio.create_task(self._process_messages())
+        self._accept_connections_task = asyncio.create_task(self._accept_connections())
+        self._process_message_task = asyncio.create_task(self._process_messages())
 
-        await asyncio.gather(self.accept_connection_task, self.process_messages_task)
+        await asyncio.gather(self._accept_connections_task, self._process_message_task)
 
     def remove_connection(self, connection):
         self._connections.remove(connection)
