@@ -10,6 +10,8 @@ class Client(MessageListener):
     to and from it."""
 
     def __init__(self):
+        super().__init__()
+
         self._connection = None
 
         self._process_msg_task = None
@@ -35,7 +37,7 @@ class Client(MessageListener):
             try:
                 ready = self._connection.has_messages()
             except EOFError:
-                await self.disconnect()
+                self.disconnect()
                 break
             else:
                 if ready:

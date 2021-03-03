@@ -31,6 +31,30 @@ def test_handle_message_calls_parser():
 
     listener._parse_message.assert_called_with(msg)
 
+@pytest.mark.asyncio
+async def test_bound_message_listener_is_called():
+    listener = MessageListener()
+    
+    mock_fn = mock.AsyncMock()
+
+    listener.on('NICK')(mock_fn)
+
+    await listener.handle_message(mock.MagicMock(), b'NICK')
+
+    mock_fn.assert_called()
+
+@pytest.mark.asyncio
+async def test_messages_with_no_bound_function_are_dropped():
+    listener = MessageListener()
+    
+    mock_fn = mock.AsyncMock()
+
+    listener.on('NICK')(mock_fn)
+
+    await listener.handle_message(mock.MagicMock(), b'FREE')
+
+    mock_fn.assert_not_called()
+
 def test_parse_message_returns_command_name():
     listener = MessageListener()
 

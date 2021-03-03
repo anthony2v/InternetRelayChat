@@ -16,10 +16,21 @@ class Server(MessageListener):
             host (str): The host IP to bind the server to
             port (int): The port to listen for connections on
         """
+        super().__init__()
         self.host = host
         self.port = port
         self._socket = None
         self._connections = []
+        self._connect_listeners = []
+        self._disconnect_listeners = []
+
+    def on_connect(func):
+        self._connect_listeners.append(func)
+        return func
+
+    def on_disconnect(func):
+        self._disconnect_listeners.append(func)
+        return func
 
     async def _accept_connections(self):
         """Co-routine to listen for new connections to the server."""
@@ -36,6 +47,8 @@ class Server(MessageListener):
         """Accept and process a raw socket connection."""
         connection = Connection(conn, addr)
         self._connections.append(connection)
+        for connect_listener in self._connect_listeners:
+            connect_listener(connection)
 
     async def _process_messages(self):
         """Co-routine to read incoming messages, handle them, and then
@@ -113,6 +126,8 @@ class Server(MessageListener):
 
     def remove_connection(self, connection):
         """Handles shutdown and cleanup of dead connections."""
+        for disconnect_listener in self._disconnect_listeners:
+            disconnect_listener(connection)
         self._connections.remove(connection)
         connection.shutdown()
 
