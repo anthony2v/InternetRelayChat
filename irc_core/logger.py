@@ -1,8 +1,11 @@
 import logging
+import sys
 
-"""TODO fix logger info printing"""
+
 logger = logging.getLogger("irc_core")
+
+handler = logging.StreamHandler(sys.stdout)
+handler.flush = sys.stdout.flush
+
+logger.addHandler(handler)
 logger.setLevel(logging.INFO)
-logger.info = print
-logger.error = print
-logger.warning = print
