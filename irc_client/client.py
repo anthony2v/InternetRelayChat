@@ -27,7 +27,7 @@ class Client(MessageListener):
         conn_socket = socket.create_connection((host, port))
         conn_socket.setblocking(False)
         
-        self._connection = Connection(conn_socket, host)
+        self._connection = Connection(conn_socket, (host, port))
 
     async def _process_messages(self):
         """A co-routine to process messages received from the server,

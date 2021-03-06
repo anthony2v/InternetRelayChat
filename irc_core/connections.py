@@ -2,6 +2,8 @@ import socket, select
 
 from .logger import logger
 
+import time
+
 
 class Connection:
     """A higher-level representation of a socket connection to 
@@ -13,11 +15,24 @@ class Connection:
         self.addr = addr
         self.nickname = None
 
-        self.host = socket.gethostbyaddr(addr[0])[0]
+        try:
+            self.host = socket.gethostbyaddr(addr[0])[0]
+        except:
+            self.host = 'unknown'
 
         self._incoming_buffer = b''
         self._incoming_messages = []
         self._outgoing_messages = []
+        self._last_message_time = time.time()
+
+        self.ping_timeout = None
+
+    def __str__(self) -> str:
+        return f'Connection(addr={self.addr}, nickname={self.nickname})'
+
+    @property
+    def time_since_last_message(self):
+        return time.time() - self._last_message_time
 
     def shutdown(self):
         """Ensures a proper shutdown of the socket"""
@@ -51,6 +66,7 @@ class Connection:
             *msgs, self._incoming_buffer = self._incoming_buffer.split(b'\r\n')
             self._incoming_messages += msgs
             self._outgoing_messages = []
+            self._last_message_time = time.time()
 
     def next_message(self):
         """Returns the next complete message that is ready for processing.

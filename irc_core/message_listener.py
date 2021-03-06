@@ -1,4 +1,5 @@
 import asyncio
+from asyncio.coroutines import iscoroutinefunction
 from .connections import Connection
 from .logger import logger
 from functools import partial
@@ -19,6 +20,11 @@ class MessageListener:
         if type(msg) == str:
             msg = msg.encode()
         def _decorator(func):
+            if not iscoroutinefunction(func):
+                logger.error('attempted to bind not coroutine func %s to msg %s', func, msg)
+                return func
+
+            logger.info('binding msg %s to %s', msg, func)
             if from_ is None:
                 self.general_message_handlers[msg] = func
             else:
@@ -49,7 +55,7 @@ class MessageListener:
         return _decorator
     
     async def handle_message(self, connection, message):
-        logger.info("MessageHandler: received message %s", message)
+        logger.info("MessageHandler: received message %s from %s", message, connection)
         cmd, prefix, params = self._parse_message(message)
 
         general_func = self.general_message_handlers.get(cmd)

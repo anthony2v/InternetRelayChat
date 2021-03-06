@@ -1,4 +1,5 @@
 import asyncio, socket
+from asyncio.exceptions import CancelledError
 
 from irc_core import MessageListener, Connection, logger
 from irc_core.parser import serialize_message
@@ -8,6 +9,8 @@ class Server(MessageListener):
     """A MessageListener class with additional functionality
     for accepting socket connections, and reading and writing
     to/from them."""
+
+    PING_INTERVAL = 5 # seconds
 
     def __init__(self, host='', port=6667):
         """
@@ -74,6 +77,9 @@ class Server(MessageListener):
                         msg = connection.next_message()
                         processing.append(
                             self.handle_message(connection, msg))
+                
+                if connection.time_since_last_message > self.PING_INTERVAL and not connection.ping_timeout:
+                    self.ping(connection)
 
             # Wait for all messages to finish processing
             # TODO Wrap in try-except so that errors handling messages don't crash the server
@@ -126,12 +132,39 @@ class Server(MessageListener):
 
     def remove_connection(self, connection):
         """Handles shutdown and cleanup of dead connections."""
+        logger.info('removing connection %s', connection)
+
         for disconnect_listener in self._disconnect_listeners:
             disconnect_listener(connection)
         self._connections.remove(connection)
         connection.shutdown()
 
-    def send(self, msg: bytes, *params: bytes, prefix = None, exclude = None):
+    def ping(self, connection):
+        logger.info('pinging %s', connection)
+        self.send_to(connection, b'PING')
+        connection.flush_messages()
+
+        def on_timeout(future):
+            try:
+                future.exception()
+            except CancelledError:
+                pass
+            else:
+                connection.ping_timeout = None
+                self.remove_connection(connection)
+
+        connection.ping_timeout = timeout = asyncio.create_task(asyncio.sleep(self.PING_INTERVAL))
+        timeout.add_done_callback(on_timeout)
+
+        @self.once(b'PONG', from_=connection)
+        async def on_pong(*args, **kwargs):
+            connection.ping_timeout = None
+            timeout.cancel()
+
+    def send_to(self, connection: Connection, msg: bytes, *params: bytes, prefix = None):
+        return self.send(msg, *params, prefix=prefix, to=connection)
+
+    def send(self, msg: bytes, *params: bytes, prefix = None, exclude = None, to = None):
         """Serializes a message, and sends it to the appropriate connections.
 
         By default, will send to all connections.
@@ -144,14 +177,18 @@ class Server(MessageListener):
                 is None, then the prefix will be set to the name of the server.
             exclude (Connection): Optionally exclude a connection from being sent to.
                 Useful when the message should not be echoed back to the client which sent it.
+            to (Connection): Optionally send only to a specific connection
         """
         if prefix is None:
             prefix = f'{self.host}:{self.port}'.encode()
 
         message = serialize_message(msg, *params, prefix = prefix)
 
-        for connection in self._connections:
-            if connection == exclude:
-                continue
+        if to is not None:
+            to.send_message(message)
+        else:
+            for connection in self._connections:
+                if connection == exclude:
+                    continue
 
-            connection.send_message(message)
+                connection.send_message(message)
