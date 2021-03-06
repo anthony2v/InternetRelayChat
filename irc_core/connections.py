@@ -14,6 +14,8 @@ class Connection:
         self._socket = socket_conn
         self.addr = addr
         self.nickname = None
+        self.username = None
+        self.real_name = None
 
         try:
             self.host = socket.gethostbyaddr(addr[0])[0]
@@ -28,7 +30,7 @@ class Connection:
         self.ping_timeout = None
 
     def __str__(self) -> str:
-        return f'Connection(addr={self.addr}, nickname={self.nickname})'
+        return f'Connection(addr={self.addr}, nickname={self.nickname}, host={self.host}, username={self.username}, real_name={self.real_name})'
 
     @property
     def time_since_last_message(self):

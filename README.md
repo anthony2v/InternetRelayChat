@@ -84,21 +84,21 @@ command decorator:
 
 ## Required Messages
 
-- 4.1.2 NICK
-- 4.1.3 USER
-- 4.1.6 QUIT
+- [x] 4.1.2 NICK
+- [x] 4.1.3 USER
+- [ ] 4.1.6 QUIT
 
-- 4.2.5 NAMES
+- [ ] 4.2.5 NAMES
 
-- 4.4.1 PRIVMSG
-- 4.4.2 NOTICE ???
+- [x] 4.4.1 PRIVMSG
+- [ ] 4.4.2 NOTICE ???
 
-- 4.5.1 WHO ???
-- 4.5.2 WHOIS ???
-- 4.5.3 WHOWAS ???
+- [ ] 4.5.1 WHO ???
+- [ ] 4.5.2 WHOIS ???
+- [ ] 4.5.3 WHOWAS ???
 
-- 4.6.2 PING
-- 4.6.3 PONG
+- [x] 4.6.2 PING
+- [x] 4.6.3 PONG
 
 # Required Replies
 - ERR_NONICKNAMEGIVEN

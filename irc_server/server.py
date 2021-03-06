@@ -1,4 +1,5 @@
-import asyncio, socket
+import asyncio
+import socket
 from asyncio.exceptions import CancelledError
 
 from irc_core import MessageListener, Connection, logger
@@ -10,7 +11,8 @@ class Server(MessageListener):
     for accepting socket connections, and reading and writing
     to/from them."""
 
-    PING_INTERVAL = 5 # seconds
+    PING_INTERVAL = 60  # seconds
+    PONG_TIMEOUT = 5  # seconds
 
     def __init__(self, host='', port=6667):
         """
@@ -27,11 +29,11 @@ class Server(MessageListener):
         self._connect_listeners = []
         self._disconnect_listeners = []
 
-    def on_connect(func):
+    def on_connect(self, func):
         self._connect_listeners.append(func)
         return func
 
-    def on_disconnect(func):
+    def on_disconnect(self, func):
         self._disconnect_listeners.append(func)
         return func
 
@@ -56,7 +58,7 @@ class Server(MessageListener):
     async def _process_messages(self):
         """Co-routine to read incoming messages, handle them, and then
         write back any responses.
-        
+
         Messages from distinct connections are processed 'in parallel' as
         asyncio co-routines.
 
@@ -65,7 +67,7 @@ class Server(MessageListener):
         """
         while True:
             processing = []
-            
+
             # Read connections
             for connection in self._connections:
                 try:
@@ -77,7 +79,7 @@ class Server(MessageListener):
                         msg = connection.next_message()
                         processing.append(
                             self.handle_message(connection, msg))
-                
+
                 if connection.time_since_last_message > self.PING_INTERVAL and not connection.ping_timeout:
                     self.ping(connection)
 
@@ -89,7 +91,8 @@ class Server(MessageListener):
             for connection in self._connections:
                 connection.flush_messages()
 
-            await asyncio.sleep(0.01) # Wait 10 milliseconds before checking messages
+            # Wait 10 milliseconds before checking messages
+            await asyncio.sleep(0.01)
 
     def __enter__(self):
         """Context-manager which creates the server socket."""
@@ -112,7 +115,6 @@ class Server(MessageListener):
             connection.shutdown()
         self._connections.clear()
 
-        
         self._socket.close()
 
     async def start(self):
@@ -125,8 +127,10 @@ class Server(MessageListener):
 
         logger.info('starting server')
 
-        self._accept_connections_task = asyncio.create_task(self._accept_connections())
-        self._process_message_task = asyncio.create_task(self._process_messages())
+        self._accept_connections_task = asyncio.create_task(
+            self._accept_connections())
+        self._process_message_task = asyncio.create_task(
+            self._process_messages())
 
         await asyncio.gather(self._accept_connections_task, self._process_message_task)
 
@@ -153,7 +157,8 @@ class Server(MessageListener):
                 connection.ping_timeout = None
                 self.remove_connection(connection)
 
-        connection.ping_timeout = timeout = asyncio.create_task(asyncio.sleep(self.PING_INTERVAL))
+        connection.ping_timeout = timeout = asyncio.create_task(
+            asyncio.sleep(self.PONG_TIMEOUT))
         timeout.add_done_callback(on_timeout)
 
         @self.once(b'PONG', from_=connection)
@@ -161,10 +166,10 @@ class Server(MessageListener):
             connection.ping_timeout = None
             timeout.cancel()
 
-    def send_to(self, connection: Connection, msg: bytes, *params: bytes, prefix = None):
+    def send_to(self, connection: Connection, msg: bytes, *params: bytes, prefix=None):
         return self.send(msg, *params, prefix=prefix, to=connection)
 
-    def send(self, msg: bytes, *params: bytes, prefix = None, exclude = None, to = None):
+    def send(self, msg: bytes, *params: bytes, prefix=None, exclude=None, to=None):
         """Serializes a message, and sends it to the appropriate connections.
 
         By default, will send to all connections.
@@ -182,7 +187,7 @@ class Server(MessageListener):
         if prefix is None:
             prefix = f'{self.host}:{self.port}'.encode()
 
-        message = serialize_message(msg, *params, prefix = prefix)
+        message = serialize_message(msg, *params, prefix=prefix)
 
         if to is not None:
             to.send_message(message)
