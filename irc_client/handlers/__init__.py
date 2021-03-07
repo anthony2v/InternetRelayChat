@@ -1,1 +1,2 @@
-from .ping import *
+from . import ping
+from . import messaging

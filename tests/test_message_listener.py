@@ -7,11 +7,9 @@ import asyncio
 def test_message_listeners_can_be_bound():
     listener = MessageListener()
     
-    mock_fn = mock.MagicMock()
+    mock_fn = mock.AsyncMock()
 
-    @listener.on('NICK')
-    def fn(send, *params, prefix = None):
-        mock_fn()
+    listener.on('NICK')(mock_fn)
 
     listener.general_message_handlers[b'NICK'](mock.MagicMock())
     mock_fn.assert_called()

@@ -16,6 +16,7 @@ class Connection:
         self.nickname = None
         self.username = None
         self.real_name = None
+        self.registered = False
 
         try:
             self.host = socket.gethostbyaddr(addr[0])[0]

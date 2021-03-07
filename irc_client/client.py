@@ -44,6 +44,11 @@ class Client(MessageListener, patterns.Subscriber):
         
         self._connection = Connection(conn_socket, (host, port))
 
+    def add_msg(self, user, msg):
+        logger.info("add_msg - [%s] %s", user, msg)
+        if self.view is not None:
+            self.add_msg(user, msg)
+
     async def _process_messages(self):
         """A co-routine to process messages received from the server,
         and write back responses asynchronously."""
@@ -75,6 +80,12 @@ class Client(MessageListener, patterns.Subscriber):
         if self._process_msg_task is not None:
             self._process_msg_task.cancel()
 
+    async def prompt_user_info(self):
+        await self._prompt_realname()
+        await self._prompt_nickname()
+
+        self.add_msg('SYSTEM', 'Welcome %s!' % self.realname)
+
     async def connect(self, host, port):
         """Connect the client to a server and begin processing messages.
         
@@ -82,13 +93,25 @@ class Client(MessageListener, patterns.Subscriber):
             host (str): The IP of the server to connect to
             port (int): The port number to connect on
         """
-        self.view.add_msg('SYSTEM', 'Connecting to %s:%s' % (host, port))
-        self._connect(host, port)
+        self.add_msg('SYSTEM', 'Connecting to server %s:%s...' % (host, port))
+        try:
+            self._connect(host, port)
+        except OSError as e:
+            self.add_msg(
+                'SYSTEM', 'Unable to connect to server %s:%s' % (host, port))
+            self.add_msg(
+                'SYSTEM', 'Exiting...')
+    
+            await asyncio.sleep(1)
+            exit(e.errno)
+
+        self.add_msg(
+            'SYSTEM', 'Connected!')
+
 
         self._process_msg_task = asyncio.create_task(self._process_messages())
 
-        await self._prompt_nickname()
-        await self._prompt_realname()
+        self._register_with_server()
 
         await self._process_msg_task
 
@@ -126,11 +149,20 @@ class Client(MessageListener, patterns.Subscriber):
         if enc_msg.startswith(b'/'):  # Send raw message
             self._connection.send_message(enc_msg[1:])
         else:
-            self.view.add_msg(self.username, msg)
-            self.send(b'PRIVMSG', b'#general', enc_msg)
+            self.add_msg(self.nickname, msg)
+            self.send(b'PRIVMSG', b'#global', enc_msg)
+
+    def _register_with_server(self):
+        self.send(b'NICK', self.nickname.encode('ascii'))
+        self.send(b'USER',
+                  self.username.encode('ascii'),
+                  self.hostname.encode('ascii'),
+                  self._connection.host.encode('ascii'),
+                  self.realname.encode('ascii'),
+                  )
 
     async def _prompt_nickname(self):        
-        self.view.add_msg('SYSTEM', 'Please enter your nickname:')
+        self.add_msg('SYSTEM', 'Please enter your nickname:')
 
         evt = asyncio.Event()
 
@@ -141,26 +173,10 @@ class Client(MessageListener, patterns.Subscriber):
             return True
 
         await evt.wait()
-        evt.clear()
-
-        self.send(b'NICK', self.nickname.encode('ascii'))
-
-        @self.once(ERR_NICKCOLLISION)
-        async def on_nick_collision(connection, nick, *params, prefix=None):
-            self.view.add_msg('SYSTEM', 'Nickname taken: %s' % nick.decode('ascii'))
-            evt.set()
-        
-        await asyncio.sleep(1)
         self.rm_update_callback(callback)
-        
-        if evt.is_set():
-            return await self._prompt_nickname()
-            
-        self.view.add_msg('SYSTEM', 'Nickname accepted: %s' % self.nickname)
-        self.off(ERR_NICKCOLLISION, on_nick_collision)
 
     async def _prompt_realname(self):
-        self.view.add_msg('SYSTEM', 'Please enter your real name:')
+        self.add_msg('SYSTEM', 'Please enter your real name:')
 
         evt = asyncio.Event()
 
@@ -171,25 +187,4 @@ class Client(MessageListener, patterns.Subscriber):
             return True
 
         await evt.wait()
-        evt.clear()
-
-        self.send(b'USER',
-                    self.username.encode('ascii'),
-                    self.hostname.encode('ascii'),
-                    self._connection.host.encode('ascii'),
-                    self.realname.encode('ascii'),
-                    )
-        
-        @self.once(ERR_ALREADYREGISTERED)
-        async def on_already_registered(connection, nick, *params, prefix=None):
-            self.view.add_msg('SYSTEM', 'User already registered: %s@%s' % (self.username, self.hostname))
-            evt.set()
-        
-        await asyncio.sleep(1)
         self.rm_update_callback(callback)
-        
-        if evt.is_set():
-            return exit(1)
-
-        self.view.add_msg('SYSTEM', 'Welcome %s!' % self.realname)
-        self.off(ERR_ALREADYREGISTERED, on_already_registered)

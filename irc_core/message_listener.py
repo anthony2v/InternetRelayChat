@@ -18,13 +18,13 @@ class MessageListener:
     def on(self, msg, from_ = None) -> Callable[[Connection, List[bytes], Optional[bytes]], None]: # replaces `command`
         """Bind a callback to a specific message type."""
         if type(msg) == str:
-            msg = msg.encode()
+            msg = msg.encode('ascii')
         def _decorator(func):
             if not iscoroutinefunction(func):
-                logger.error('attempted to bind not coroutine func %s to msg %s', func, msg)
+                logger.error('attempted to bind non-coroutine func %s to msg %s', func, msg)
                 return func
 
-            logger.info('binding msg %s to %s', msg, func)
+            logger.debug('binding msg %s to %s', msg, func)
             if from_ is None:
                 self.general_message_handlers[msg] = func
             else:
@@ -55,7 +55,7 @@ class MessageListener:
         return _decorator
     
     async def handle_message(self, connection, message):
-        logger.info("MessageHandler: received message %s from %s", message, connection)
+        logger.debug("received message %s from %s", message, connection)
         cmd, prefix, params = self._parse_message(message)
 
         general_func = self.general_message_handlers.get(cmd)
@@ -68,7 +68,7 @@ class MessageListener:
             bound_funcs.append(specific_func)
 
         if not bound_funcs:
-            logger.warning("MessageHandler: received unknown message type %s", cmd)
+            logger.warning("received unknown message type %s", cmd)
             return
         
         futures = [

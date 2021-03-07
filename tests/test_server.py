@@ -34,13 +34,14 @@ def test_server_send_sends_message_to_all_connections_except_the_one_specified_b
             conn.send_message.assert_not_called()
 
 
-def test_remove_connection():
+@pytest.mark.asyncio
+async def test_remove_connection():
     server = Server()
     
     connection = mock.MagicMock()
     server._connections = [connection]
 
-    server.remove_connection(connection)
+    await server.remove_connection(connection)
     
     assert server._connections == []
     connection.shutdown.assert_called()

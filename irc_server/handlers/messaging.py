@@ -12,6 +12,6 @@ async def relay_private_messages(connection, receivers, msg=None, prefix=None):
 
     receivers = receivers.split(b',')
 
-    if b'#general' in receivers:
-        server.send(b'PRIVMSG', b'#general', msg,
+    if b'#global' in receivers:
+        server.send(b'PRIVMSG', b'#global', msg,
                     prefix=connection.nickname, exclude=connection)

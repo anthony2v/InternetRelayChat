@@ -73,7 +73,7 @@ class Server(MessageListener):
                 try:
                     ready = connection.has_messages()
                 except EOFError:
-                    self.remove_connection(connection)
+                    await self.remove_connection(connection)
                 else:
                     if ready:
                         msg = connection.next_message()
@@ -96,6 +96,7 @@ class Server(MessageListener):
 
     def __enter__(self):
         """Context-manager which creates the server socket."""
+        logger.info("Creating server at %s:%s ..." % (self.host, self.port))
         self._socket = socket.create_server((self.host, self.port))
         self._socket.setblocking(False)
 
@@ -125,21 +126,21 @@ class Server(MessageListener):
         if not self._socket:
             raise Exception('socket must be opened first (use with statement)')
 
-        logger.info('starting server')
-
         self._accept_connections_task = asyncio.create_task(
             self._accept_connections())
         self._process_message_task = asyncio.create_task(
             self._process_messages())
 
+        logger.info('...server is ready!')
+
         await asyncio.gather(self._accept_connections_task, self._process_message_task)
 
-    def remove_connection(self, connection):
+    async def remove_connection(self, connection):
         """Handles shutdown and cleanup of dead connections."""
         logger.info('removing connection %s', connection)
 
         for disconnect_listener in self._disconnect_listeners:
-            disconnect_listener(connection)
+            await disconnect_listener(connection)
         self._connections.remove(connection)
         connection.shutdown()
 
@@ -148,14 +149,14 @@ class Server(MessageListener):
         self.send_to(connection, b'PING')
         connection.flush_messages()
 
-        def on_timeout(future):
+        async def on_timeout(future):
             try:
                 future.exception()
             except CancelledError:
                 pass
             else:
                 connection.ping_timeout = None
-                self.remove_connection(connection)
+                await self.remove_connection(connection)
 
         connection.ping_timeout = timeout = asyncio.create_task(
             asyncio.sleep(self.PONG_TIMEOUT))
