@@ -1,3 +1,5 @@
+from time import time
+from typing import DefaultDict
 from irc_server import server
 
 from irc_core.replies import *
@@ -7,6 +9,14 @@ from irc_core import logger
 
 
 registered_nicknames = set()
+channel_membership = DefaultDict(set)
+number_of_anons = -1
+
+
+def random_nickname():
+    global number_of_anons
+    number_of_anons += 1
+    return f"anon{number_of_anons}"
 
 
 def nickname_to_lowercase(nickname):
@@ -36,7 +46,11 @@ async def set_user_info(connection: Connection, *params, prefix=None):
     connection.username = username
     connection.real_name = real_name
     connection.host = host_name
+    if connection.nickname is None:
+        connection.nickname = random_nickname()
+        registered_nicknames.add(connection.nickname)
     connection.registered = True
+    add_to_channel(connection, "#global")
 
 
 @server.on('NICK')
@@ -77,4 +91,39 @@ async def on_quit(connection, msg=None, prefix=None):
 
 @server.on_disconnect
 async def remove_nickname(connection):
-    registered_nicknames.discard(connection.nickname)
+    logger.info("Deregistering %s", connection)
+    registered_nicknames.discard(nickname_to_lowercase(connection.nickname))
+    for members in channel_membership.values():
+        members.discard(connection)
+
+
+def add_to_channel(connection, channel_name):
+    logger.info("Adding %s to %s", connection, channel_name)
+    channel_membership[channel_name].add(connection)
+    for conn in channel_membership[channel_name]:
+        server.send_to(conn, 'JOIN', channel_name, prefix=connection.nickname)
+
+    send_names_to_connection(connection, channel_name)
+
+
+def send_names_to_connection(connection, channel_name):
+    logger.info("Sending members list to %s", connection)
+    members = list(conn.nickname for conn in channel_membership[channel_name] if conn.nickname is not None)
+    batches = []
+    batch = []
+    batch_length = 0
+    batch_size = 506 - len(channel_name) - 1
+    for member in members:
+        if batch_length + len(member) + 1 >= batch_size:
+            batches.append(batch)
+            batch = []
+            batch_length = 0
+        batch.append(member)
+        batch_length += len(member) + 1
+    batches.append(batch)
+    
+    for batch in batches:
+        server.send_to(connection, RPL_NAMEREPLY, channel_name, ' '.join(batch))
+    
+    server.send_to(connection, RPL_ENDOFNAMES, channel_name)
+        

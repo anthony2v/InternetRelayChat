@@ -23,7 +23,7 @@ async def main(args):
         done, _ = await asyncio.wait([view_task, client_task], return_when=asyncio.FIRST_EXCEPTION)
     
         for f in done:
-            f.result()
+            print(f.result())
 
 
 if __name__ == "__main__":

@@ -8,4 +8,4 @@ handler = logging.StreamHandler(sys.stdout)
 handler.flush = sys.stdout.flush
 
 logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
