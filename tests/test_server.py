@@ -12,7 +12,7 @@ def test_server_send_sends_message_to_all_connections_when_no_exclude():
         mock.MagicMock() for _ in range(5)
     ]
 
-    server.send(b'PING')
+    server.send('PING')
 
     for conn in server._connections:
         conn.send_message.asset_called_with(b'::6667 PING')
@@ -25,7 +25,7 @@ def test_server_send_sends_message_to_all_connections_except_the_one_specified_b
         mock.MagicMock() for _ in range(5)
     ] + [exclude]
 
-    server.send(b'PING', exclude=exclude)
+    server.send('PING', exclude=exclude)
 
     for conn in server._connections:
         if conn != exclude:

@@ -17,9 +17,9 @@ def test_connection_gets_host_name(mock_gethostbyaddr):
 def test_next_message_returns_first_message_in__incoming_buffer_and_removes_it():
     conn = Connection(mock.MagicMock(), ('127.0.0.1', 50000))
 
-    conn._incoming_messages = ['first message', 'second message']
-    assert conn.next_message() == 'first message'
-    assert conn.next_message() == 'second message'
+    conn._incoming_messages = [b'first message', b'second message']
+    assert conn.next_message() == b'first message'
+    assert conn.next_message() == b'second message'
 
     with pytest.raises(IndexError):
         conn.next_message()
@@ -38,7 +38,7 @@ def test_has_messages_returns_true_in_there_are_messages_in_the__incoming_buffer
     conn = Connection(mock.MagicMock(), ('127.0.0.1', 50000))
     conn._get_messages = mock.MagicMock()
 
-    conn._incoming_messages = ['message 1']
+    conn._incoming_messages = [b'message 1']
     assert conn.has_messages()
 
     conn._incoming_messages = []

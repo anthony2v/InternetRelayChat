@@ -8,7 +8,7 @@ def test_send_calls_connection_send_message():
     client = Client()
     client._connection = mock.MagicMock()
 
-    client.send(b'NICK', b'one')
+    client.send('NICK', 'one')
     client._connection.send_message.assert_called_with(b'NICK one')
 
 
@@ -65,7 +65,7 @@ async def test_client_can_send_and_receive_messages_to_from_server(server):
 
     await asyncio.sleep(0.1)
 
-    client.send(b'NICK', b'Drew')
+    client.send('NICK', 'Drew')
 
     await asyncio.sleep(0.1)
 

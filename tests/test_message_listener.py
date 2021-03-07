@@ -11,7 +11,7 @@ def test_message_listeners_can_be_bound():
 
     listener.on('NICK')(mock_fn)
 
-    listener.general_message_handlers[b'NICK'](mock.MagicMock())
+    listener.general_message_handlers['NICK'](mock.MagicMock())
     mock_fn.assert_called()
 
 def test_handle_message_calls_parser():
@@ -60,22 +60,22 @@ def test_parse_message_returns_command_name():
 
     command, prefix, params = listener._parse_message(msg)
 
-    assert command == b"NICK"
-    assert prefix == b"WiZ"
-    assert params == [b"Kilroy"]
+    assert command == "NICK"
+    assert prefix == "WiZ"
+    assert params == ["Kilroy"]
 
     msg = b"NICK Wiz\r\n"
 
     command, prefix, params = listener._parse_message(msg)
 
-    assert command == b"NICK"
+    assert command == "NICK"
     assert prefix == None
-    assert params == [b"Wiz"]
+    assert params == ["Wiz"]
 
     msg = b":Angel PRIVMSG Wiz :Hello are you receiving this message ?\r\n"
 
     command, prefix, params = listener._parse_message(msg)
-    print(params)
-    assert command == b"PRIVMSG"
-    assert prefix == b"Angel"
-    assert params == [b"Wiz", b"Hello are you receiving this message ?"]
+
+    assert command == "PRIVMSG"
+    assert prefix == "Angel"
+    assert params == ["Wiz", "Hello are you receiving this message ?"]
