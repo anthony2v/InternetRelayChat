@@ -77,8 +77,12 @@ class Client(MessageListener, patterns.Subscriber):
         the connection."""
         if self._connection is not None:
             self._connection.shutdown()
+            self._connection = None
         if self._process_msg_task is not None:
             self._process_msg_task.cancel()
+
+        self.add_msg('SYSTEM', 'Server shutdown unexpectedly')
+        self.add_msg('SYSTEM', 'Press <ENTER> to exit')
 
     async def prompt_user_info(self):
         await self._prompt_realname()
@@ -100,10 +104,9 @@ class Client(MessageListener, patterns.Subscriber):
             self.add_msg(
                 'SYSTEM', 'Unable to connect to server %s:%s' % (host, port))
             self.add_msg(
-                'SYSTEM', 'Exiting...')
-    
-            await asyncio.sleep(1)
-            exit(e.errno)
+                'SYSTEM', 'Press <ENTER> to exit...')
+            
+            return
 
         self.add_msg(
             'SYSTEM', 'Connected!')
@@ -143,6 +146,9 @@ class Client(MessageListener, patterns.Subscriber):
         for callback in self._update_callbacks:
             if callback(msg):
                 return
+
+        if not self._connection:
+            exit(1)
 
         enc_msg = msg.encode('ascii')
 
