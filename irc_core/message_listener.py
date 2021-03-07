@@ -2,9 +2,9 @@ import asyncio
 from asyncio.coroutines import iscoroutinefunction
 from .connections import Connection
 from .logger import logger
+from .parser import parse_message
 from functools import partial
 from typing import Callable, List, Optional
-
 
 class MessageListener:
     def __init__(self):
@@ -17,8 +17,6 @@ class MessageListener:
 
     def on(self, msg, from_ = None) -> Callable[[Connection, List[bytes], Optional[bytes]], None]: # replaces `command`
         """Bind a callback to a specific message type."""
-        if type(msg) == str:
-            msg = msg.encode('ascii')
         def _decorator(func):
             if not iscoroutinefunction(func):
                 logger.error('attempted to bind non-coroutine func %s to msg %s', func, msg)
@@ -41,8 +39,6 @@ class MessageListener:
 
     def once(self, msg, from_ = None) -> Callable[[Connection, List[bytes], Optional[bytes]], None]:
         """Bind a callback for a specific message type, and then unbind after one message has been processed."""
-        if type(msg) == str:
-            msg = msg.encode()
         def _decorator(func):
             def wrapper(*args, **kwargs):
                 self.off(msg, wrapper, from_)
@@ -56,7 +52,7 @@ class MessageListener:
     
     async def handle_message(self, connection, message):
         logger.debug("received message %s from %s", message, connection)
-        cmd, prefix, params = self._parse_message(message)
+        cmd, prefix, params = parse_message(message)
 
         general_func = self.general_message_handlers.get(cmd)
         specific_func = self.specific_message_handlers.get((cmd, connection))
@@ -76,27 +72,6 @@ class MessageListener:
             for f in bound_funcs
         ]
         await asyncio.gather(*futures)
-
-    def _parse_message(self, message):
-        message = message.replace(b"\r\n", b"")
-
-        prefix = None
-        if message.startswith(b':'):
-            first_space = message.index(b' ')
-            prefix = message[1:first_space]
-            message = message[first_space+1:].lstrip(b' ')
-
-        trailing_start = message.find(b':')
-        trailing = []
-        if trailing_start != -1:   
-            trailing.append(message[trailing_start+1:])
-            message = message[:trailing_start]
-
-        cmd, *params = message.split(b' ')
-        params = list(p for p in params if p)
-
-        params += trailing
-        return cmd, prefix, params
 
     def send(self, connection, message, **kwargs):
         pass

@@ -1,4 +1,5 @@
 from irc_core.connections import Connection
+from irc_core.parser import parse_message
 from unittest import mock
 from irc_core.message_listener import MessageListener
 import pytest
@@ -20,14 +21,13 @@ def test_handle_message_calls_parser():
     mock_connection = mock.MagicMock(spec = Connection)
     msg = b"NICK\r\n"
 
-    listener._parse_message = mock.MagicMock(return_value = (None, None, None))
+    with mock.patch("irc_core.message_listener.parse_message", return_value = (None, None, None)) as parse_message:
+        asyncio.run(listener.handle_message(
+            connection = mock_connection,
+            message = msg
+        ))
 
-    asyncio.run(listener.handle_message(
-        connection = mock_connection,
-        message = msg
-    ))
-
-    listener._parse_message.assert_called_with(msg)
+        parse_message.assert_called_with(msg)
 
 @pytest.mark.asyncio
 async def test_bound_message_listener_is_called():
@@ -58,7 +58,7 @@ def test_parse_message_returns_command_name():
 
     msg = b":WiZ NICK Kilroy\r\n"
 
-    command, prefix, params = listener._parse_message(msg)
+    command, prefix, params = parse_message(msg)
 
     assert command == "NICK"
     assert prefix == "WiZ"
@@ -66,7 +66,7 @@ def test_parse_message_returns_command_name():
 
     msg = b"NICK Wiz\r\n"
 
-    command, prefix, params = listener._parse_message(msg)
+    command, prefix, params = parse_message(msg)
 
     assert command == "NICK"
     assert prefix == None
@@ -74,7 +74,7 @@ def test_parse_message_returns_command_name():
 
     msg = b":Angel PRIVMSG Wiz :Hello are you receiving this message ?\r\n"
 
-    command, prefix, params = listener._parse_message(msg)
+    command, prefix, params = parse_message(msg)
 
     assert command == "PRIVMSG"
     assert prefix == "Angel"
