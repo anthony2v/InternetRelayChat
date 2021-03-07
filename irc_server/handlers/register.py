@@ -68,6 +68,14 @@ async def set_nickname(connection, *params, prefix=None):
         server.send(b'NICK', nickname, prefix=previous_nickname)
 
 
+@server.on(b'QUIT')
+async def on_quit(connection, msg=None, prefix=None):
+    if msg is None:
+        msg = connection.nickname
+    
+    await server.remove_connection(connection, msg=msg)
+
+
 @server.on_disconnect
 async def remove_nickname(connection):
     registered_nicknames.discard(connection.nickname)

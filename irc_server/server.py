@@ -135,12 +135,19 @@ class Server(MessageListener):
 
         await asyncio.gather(self._accept_connections_task, self._process_message_task)
 
-    async def remove_connection(self, connection):
+    async def remove_connection(self, connection, msg=None):
         """Handles shutdown and cleanup of dead connections."""
         logger.info('removing connection %s', connection)
 
         for disconnect_listener in self._disconnect_listeners:
             await disconnect_listener(connection)
+
+        if msg is None:
+            msg = b"Client disconnected unexpectedly"
+
+        self.send(b'QUIT', msg, prefix=connection.nickname,
+                    exclude=connection)
+
         self._connections.remove(connection)
         connection.shutdown()
 
