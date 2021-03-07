@@ -118,12 +118,12 @@ class Client(MessageListener, patterns.Subscriber):
 
         await self._process_msg_task
 
-    def send(self, msg: bytes, *params: bytes):
+    def send(self, msg: str, *params: str):
         """Serialize and send a message to the server connection.
 
         Args:
-            msg (bytes): The type of message to send (i.e NICK, PRIVMSG, etc..)
-            *params (bytes): Any number of parameters to the message.
+            msg (str): The type of message to send (i.e NICK, PRIVMSG, etc..)
+            *params (str): Any number of parameters to the message.
                 NOTE Only the last parameter may include spaces (0x20)
         """
         message = serialize_message(msg, *params)
@@ -150,21 +150,20 @@ class Client(MessageListener, patterns.Subscriber):
         if not self._connection:
             exit(1)
 
-        enc_msg = msg.encode('ascii')
-
-        if enc_msg.startswith(b'/'):  # Send raw message
-            self._connection.send_message(enc_msg[1:])
+        if msg.startswith('/'):  # Send raw message
+            self._connection.send_message(
+                msg[1:].encode('ascii'))
         else:
             self.add_msg(self.nickname, msg)
-            self.send(b'PRIVMSG', b'#global', enc_msg)
+            self.send('PRIVMSG', '#global', msg)
 
     def _register_with_server(self):
-        self.send(b'NICK', self.nickname.encode('ascii'))
-        self.send(b'USER',
-                  self.username.encode('ascii'),
-                  self.hostname.encode('ascii'),
-                  self._connection.host.encode('ascii'),
-                  self.realname.encode('ascii'),
+        self.send('NICK', self.nickname)
+        self.send('USER',
+                  self.username,
+                  self.hostname,
+                  self._connection.host,
+                  self.realname,
                   )
 
     async def _prompt_nickname(self):        

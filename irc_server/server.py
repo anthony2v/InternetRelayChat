@@ -143,17 +143,17 @@ class Server(MessageListener):
             await disconnect_listener(connection)
 
         if msg is None:
-            msg = b"Client disconnected unexpectedly"
+            msg = "Client disconnected unexpectedly"
 
-        self.send(b'QUIT', msg, prefix=connection.nickname,
-                    exclude=connection)
+        self.send('QUIT', msg, prefix=connection.nickname,
+                  exclude=connection)
 
         self._connections.remove(connection)
         connection.shutdown()
 
     def ping(self, connection):
         logger.info('pinging %s', connection)
-        self.send_to(connection, b'PING')
+        self.send_to(connection, 'PING')
         connection.flush_messages()
 
         async def on_timeout(future):
@@ -169,15 +169,15 @@ class Server(MessageListener):
             asyncio.sleep(self.PONG_TIMEOUT))
         timeout.add_done_callback(on_timeout)
 
-        @self.once(b'PONG', from_=connection)
+        @self.once('PONG', from_=connection)
         async def on_pong(*args, **kwargs):
             connection.ping_timeout = None
             timeout.cancel()
 
-    def send_to(self, connection: Connection, msg: bytes, *params: bytes, prefix=None):
+    def send_to(self, connection: Connection, msg: str, *params: str, prefix: str = None):
         return self.send(msg, *params, prefix=prefix, to=connection)
 
-    def send(self, msg: bytes, *params: bytes, prefix=None, exclude=None, to=None):
+    def send(self, msg: str, *params: str, prefix: str = None, exclude: Connection = None, to: Connection = None):
         """Serializes a message, and sends it to the appropriate connections.
 
         By default, will send to all connections.
@@ -193,7 +193,7 @@ class Server(MessageListener):
             to (Connection): Optionally send only to a specific connection
         """
         if prefix is None:
-            prefix = f'{self.host}:{self.port}'.encode()
+            prefix = f'{self.host}:{self.port}'
 
         message = serialize_message(msg, *params, prefix=prefix)
 

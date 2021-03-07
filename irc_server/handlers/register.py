@@ -10,7 +10,6 @@ registered_nicknames = set()
 
 
 def nickname_to_lowercase(nickname):
-    nickname = nickname.decode('ascii')
     nickname = nickname.lower()
     nickname = nickname.translate({
         '[': '{',
@@ -18,20 +17,20 @@ def nickname_to_lowercase(nickname):
         '\\': '|',
     })
 
-    return nickname.encode('ascii')
+    return nickname
 
 
-@server.on(b'USER')
+@server.on('USER')
 async def set_user_info(connection: Connection, *params, prefix=None):
     if connection.registered:
         logger.error('ERR_ALREADYREGISTERED %s params=%s connection=%s',
                      'USER', params, connection)
-        return server.send_to(connection, ERR_ALREADYREGISTERED, b'You may not reregister')
+        return server.send_to(connection, ERR_ALREADYREGISTERED, 'You may not reregister')
 
     if len(params) != 4:
         logger.error('ERR_NEEDMOREPARAMS %s params=%s connection=%s',
                      'USER', params, connection)
-        return server.send_to(connection, ERR_NEEDMOREPARAMS, b'USER', b'Not enough parameters')
+        return server.send_to(connection, ERR_NEEDMOREPARAMS, 'USER', 'Not enough parameters')
 
     username, host_name, server_name, real_name = params
     connection.username = username
@@ -40,14 +39,14 @@ async def set_user_info(connection: Connection, *params, prefix=None):
     connection.registered = True
 
 
-@server.on(b'NICK')
+@server.on('NICK')
 async def set_nickname(connection, *params, prefix=None):
     # TODO Check for nick name collisions
 
     if not params:
         logger.error('ERR_NONICKNAMEGIVEN %s params=%s connection=%s',
                      'NICK', params, connection)
-        return server.send_to(connection, ERR_NONICKNAMEGIVEN, b'No nickname given')
+        return server.send_to(connection, ERR_NONICKNAMEGIVEN, 'No nickname given')
 
     nickname = params[0]
 
@@ -57,7 +56,7 @@ async def set_nickname(connection, *params, prefix=None):
     if lowercase_nickname in registered_nicknames:
         logger.error('ERR_NICKCOLLISION %s params=%s connection=%s',
                      'NICK', params, connection)
-        return server.send_to(connection, ERR_NICKCOLLISION, nickname, b'Nickname collision KILL')
+        return server.send_to(connection, ERR_NICKCOLLISION, nickname, 'Nickname collision KILL')
 
     registered_nicknames.add(lowercase_nickname)
     connection.nickname = nickname
@@ -65,10 +64,10 @@ async def set_nickname(connection, *params, prefix=None):
     if previous_nickname is not None:
         registered_nicknames.discard(
             nickname_to_lowercase(previous_nickname))
-        server.send(b'NICK', nickname, prefix=previous_nickname)
+        server.send('NICK', nickname, prefix=previous_nickname)
 
 
-@server.on(b'QUIT')
+@server.on('QUIT')
 async def on_quit(connection, msg=None, prefix=None):
     if msg is None:
         msg = connection.nickname
