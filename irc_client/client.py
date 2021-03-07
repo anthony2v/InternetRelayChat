@@ -47,7 +47,7 @@ class Client(MessageListener, patterns.Subscriber):
     def add_msg(self, user, msg):
         logger.info("add_msg - [%s] %s", user, msg)
         if self.view is not None:
-            self.add_msg(user, msg)
+            self.view.add_msg(user, msg)
 
     async def _process_messages(self):
         """A co-routine to process messages received from the server,
