@@ -11,8 +11,8 @@ class Server(MessageListener):
     for accepting socket connections, and reading and writing
     to/from them."""
 
-    PING_INTERVAL = 60  # seconds
-    PONG_TIMEOUT = 5  # seconds
+    PING_INTERVAL = 5  # seconds
+    PONG_TIMEOUT = 2  # seconds
 
     def __init__(self, host='', port=6667):
         """

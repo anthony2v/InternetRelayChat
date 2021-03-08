@@ -81,7 +81,7 @@ class Client(MessageListener, patterns.Subscriber):
         if self._process_msg_task is not None:
             self._process_msg_task.cancel()
 
-        self.add_msg('SYSTEM', 'Server shutdown unexpectedly')
+        self.add_msg('SYSTEM', 'Connection closed.')
         self.add_msg('SYSTEM', 'Press <ENTER> to exit')
 
     async def prompt_user_info(self):

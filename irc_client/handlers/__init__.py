@@ -1,2 +1,2 @@
-from . import ping
-from . import messaging
+from .commands import *
+from .errors  import *

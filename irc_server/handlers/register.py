@@ -7,7 +7,7 @@ from irc_core.connections import Connection
 from irc_core import logger
 
 
-ALLOWED_IN_NICKNAME = set("abcdefghijklmnopqrstuvwxyz0123456789")
+ALLOWED_IN_NICKNAME = set(R"abcdefghijklmnopqrstuvwxyz0123456789-[]\|`^{}")
 
 # Tracks all registered nicknames
 registered_nicknames = set()
