@@ -70,8 +70,6 @@ class Client(MessageListener, patterns.Subscriber):
             
             await asyncio.sleep(0.01)
         
-        # TODO UI Event: Connection closed unexpectedly?
-
     def disconnect(self):
         """Disconnect from the server and handle shutdown and cleanup of
         the connection."""
