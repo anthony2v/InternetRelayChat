@@ -1,4 +1,9 @@
 def serialize_message(msg, *params, prefix=None):
+    """Serializes a message from higher-level python
+    to a IRC message packet.
+    
+    NOTE: \\r\\n terminator is added by connection class
+    """
     serialized = ''
     if prefix is not None:
         serialized += ':%s ' % prefix
@@ -19,6 +24,11 @@ def serialize_message(msg, *params, prefix=None):
     return serialized
 
 def parse_message(message):
+    """Parse a bytes message to its string parts.
+
+    Returns:
+        command_code, parameter_list, prefix
+    """
     message = message.decode()
 
     message = message.replace("\r\n", "")

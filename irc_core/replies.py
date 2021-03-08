@@ -1,3 +1,5 @@
+"""Defines constants for reply codes"""
+
 RPL_NAMEREPLY = '353'
 RPL_ENDOFNAMES = '366'
 
